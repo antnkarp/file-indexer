@@ -46,7 +46,10 @@ void readArguments(int argc, char **argv, char **path_d, char **path_f, int *t) 
 	if (!(*path_f)) {
 		*path_f = getenv("MOLE_INDEX_PATH");
 		if (!(*path_f)) {
-			*path_f = "~/.mole-index";
+			*path_f = getenv("HOME");
+
+			char *suffix = "/.mole-index";
+			strcat(*path_f, suffix); 
 		}
 	}
 	if(*t!=-1 && (*t<30 || *t>7200)) {
@@ -57,18 +60,27 @@ void readArguments(int argc, char **argv, char **path_d, char **path_f, int *t) 
 void getCommands(threadData* thread_data) {
 	char line[LINE_LEN];
 	char *part1, *part2;
-	int inProgress;
 	fd_set rfds;
-	struct timeval tv;
-	
+	struct timespec tv;
+	enum threadStatus status;
+	sigset_t alarmMask;
+	sigemptyset(&alarmMask);
+	sigaddset(&alarmMask, SIGALRM);
 	tv.tv_sec=1;
-	tv.tv_usec=0;
+	tv.tv_nsec=0;
 	for(;;) {
 		FD_ZERO(&rfds);
-		FD_SET(0, &rfds);
-		/* Use select with timeout to synchronously handle SIGALRM */
-		select(1, &rfds, NULL, NULL, &tv);
+		FD_SET(0,&rfds);
+		/* Use pselect with timeout to synchronously handle SIGALRM.
+		 * Block SIGALRM while waiting for input. */
+		pselect(1, &rfds, NULL, NULL, &tv, &alarmMask);
 		if (last_signal == SIGALRM) {
+			pthread_mutex_lock(thread_data->mxStatus);
+			status = *(thread_data->status);
+			pthread_mutex_unlock(thread_data->mxStatus);
+			if(status==THREAD_PENDING_JOIN) {
+				pthread_join(thread_data->tid, NULL);
+			}
 			runThread(thread_data);
 			last_signal = 0;
 		}
@@ -82,41 +94,51 @@ void getCommands(threadData* thread_data) {
 			part2 = line+strlen(part1)+1;
 			(void)part2;
 			if (!strcmp(part1, "exit")) {
-				inProgress=1;
-				while(inProgress) {
-					pthread_mutex_lock(thread_data->mxInProgress);
-					inProgress = *(thread_data->inProgress);
-					pthread_mutex_unlock(thread_data->mxInProgress);
+				pthread_mutex_lock(thread_data->mxStatus);
+				status = *(thread_data->status);
+				pthread_mutex_unlock(thread_data->mxStatus);
+				/* If status is THREAD_IN_PROGRESS, it will eventually turn to
+				 * THREAD_PENDING_JOIN.*/
+				if (status!=THREAD_NOT_EXISTS) {
+					pthread_join(thread_data->tid, NULL);
 				}
+				pthread_mutex_lock(thread_data->mxStatus);
+				*(thread_data->status) = THREAD_NOT_EXISTS;
+				pthread_mutex_unlock(thread_data->mxStatus);
 				break;
 			} else if (!strcmp(part1, "exit!")) {
-				pthread_mutex_lock(thread_data->mxInProgress);
-				inProgress = *(thread_data->inProgress);
-				pthread_mutex_unlock(thread_data->mxInProgress);
-				/* Cancel the thread*/
-				if (inProgress==1) {
+				pthread_mutex_lock(thread_data->mxStatus);
+				status = *(thread_data->status);
+				pthread_mutex_unlock(thread_data->mxStatus);
+				/* If the thread does not exists, then exit immidiately.*/
+				if (status==THREAD_NOT_EXISTS) {
+					break;
+				/* If the indexing is in action, then cancel the thread*/
+				} else if (status==THREAD_IN_PROGRESS) {
 					pthread_cancel(thread_data->tid);
 				}
-				/* The thread could have been cancelled while indexing.
-				 * Check if it's still running, if not terminate*/
-				while(inProgress) {
-					if (pthread_kill(thread_data->tid, 0)) {
-						break;
-					}
-					pthread_mutex_lock(thread_data->mxInProgress);
-					inProgress = *(thread_data->inProgress);
-					pthread_mutex_unlock(thread_data->mxInProgress);
-				}
+				/* Even if the thread was cancelled, we need to join.*/
+				pthread_join(thread_data->tid, NULL);
+				pthread_mutex_lock(thread_data->mxStatus);
+				*(thread_data->status) = THREAD_NOT_EXISTS;
+				pthread_mutex_unlock(thread_data->mxStatus);
 				break;
 			} else if (!strcmp(part1, "index")) {
-				pthread_mutex_lock(thread_data->mxInProgress);
-				inProgress = *(thread_data->inProgress);
-				pthread_mutex_unlock(thread_data->mxInProgress);
-				if (inProgress==1) {
-					printf("Indexing in action.");
-				} else {
-					runThread(thread_data);
-				}	
+				pthread_mutex_lock(thread_data->mxStatus);
+				status = *(thread_data->status);
+				pthread_mutex_unlock(thread_data->mxStatus);
+				switch (status) {
+					case THREAD_IN_PROGRESS:
+						printf("Indexing in action.\n");
+						break;
+					case THREAD_PENDING_JOIN:
+						pthread_join(thread_data->tid, NULL);
+						runThread(thread_data);
+						break;
+					case THREAD_NOT_EXISTS:
+						runThread(thread_data);
+						break;
+				}
 			} else if (!strcmp(part1, "count")) {
 				menuCount(thread_data->index);
 			} else if (!strcmp(part1, "largerthan")) {
@@ -143,11 +165,11 @@ int main(int argc, char **argv) {
 	threadData thread_data;
 	fileInfo_list index;
 	initList(&index);
-	int inProgress=0;
-	pthread_mutex_t mxInProgress = PTHREAD_MUTEX_INITIALIZER;
+	enum threadStatus status = THREAD_NOT_EXISTS;
+	pthread_mutex_t mxStatus = PTHREAD_MUTEX_INITIALIZER;
 	
-	thread_data.inProgress = &inProgress;
-	thread_data.mxInProgress = &mxInProgress;
+	thread_data.status = &status;
+	thread_data.mxStatus = &mxStatus;
 	thread_data.index = &index;
 	thread_data.path_d = path_d;
 	thread_data.path_f = path_f;

@@ -12,9 +12,9 @@ void *thread_work(void *voidPtr) {
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 	threadData *args = voidPtr;
 	
-	pthread_mutex_lock(args->mxInProgress);
-	*(args->inProgress)=1;
-	pthread_mutex_unlock(args->mxInProgress);
+	pthread_mutex_lock(args->mxStatus);
+	*(args->status)=THREAD_IN_PROGRESS;
+	pthread_mutex_unlock(args->mxStatus);
 	
 	/* Free list to avoid memory leaks. */
 	freeList(args->index);
@@ -25,16 +25,17 @@ void *thread_work(void *voidPtr) {
 	
 	saveFile(args->path_f, args->index);
 	
-	pthread_mutex_lock(args->mxInProgress);
-	*(args->inProgress)=0;
-	pthread_mutex_unlock(args->mxInProgress);
-	
 	/* Periodically reindex every t seconds. */
 	if(*(args->t) != -1) {
 		alarm(0);
 		alarm(*(args->t));
 	}
 	fprintf(stderr, "\nFinished indexing\n");
+	
+	pthread_mutex_lock(args->mxStatus);
+	*(args->status)=THREAD_PENDING_JOIN;
+	pthread_mutex_unlock(args->mxStatus);
+	
 	return NULL;
 }
 	 
@@ -98,17 +99,7 @@ void walk(char *dirToOpen, fileInfo_list *index) {
 }
 
 void runThread(threadData *thread_data) {
-	pthread_attr_t threadAttr;
-	if (pthread_attr_init(&threadAttr)) {
-		ERR("pthread_attr_init");
-	}
-	if (pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_DETACHED)) {
-		ERR("pthread_setdetachstate");
-	}
-	if (pthread_create(&(thread_data->tid), &threadAttr, thread_work, thread_data)) {
+	if (pthread_create(&(thread_data->tid), NULL, thread_work, thread_data)) {
 		ERR("pthread_create");
-	}
-	if (pthread_attr_destroy(&threadAttr)) {
-		ERR("pthread_attr_destroy");
 	}
 }

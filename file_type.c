@@ -26,16 +26,15 @@ enum fileType getFileType(int fd) {
 
 int isJpeg(int fd) {
 	char file_begin[4];
-	char signature_begin_1[4] = {-1, -40, -1, -32};
+	char signature_begin[4] = {-1, -40, -1, -32};
 	/* Check the first 4 bytes of a file (magic number)*/
 	lseek(fd, 0, SEEK_SET);
 	read(fd, file_begin, 4);
-	for(int i=0; i<4; i++) {
-		if (signature_begin_1[i] != file_begin[i]) {
-			return 0;
-		}
+	if (memcmp(file_begin, signature_begin, 4)) {
+		return 0;
+	} else {
+		return 1;
 	}
-	return 1;
 }
 
 int isPng(int fd) {
@@ -44,13 +43,11 @@ int isPng(int fd) {
 	/* Check the first 8 bytes of a file (magic number)*/
 	lseek(fd, 0, SEEK_SET);
 	read(fd, file_begin, 8);
-	
-	for(int i=0; i<8; i++) {
-		if (file_begin[i]!=signature_begin[i]) {
-			return 0;
-		}
+	if (memcmp(file_begin, signature_begin, 4)) {
+		return 0;
+	} else {
+		return 1;
 	}
-	return 1;
 }
 
 int isGzip(int fd) {
@@ -59,12 +56,11 @@ int isGzip(int fd) {
 	/* Check the first 2 bytes of a file (magic number)*/
 	lseek(fd, 0, SEEK_SET);
 	read(fd, file_begin, 2);
-	for(int i=0; i<2; i++) {
-		if (file_begin[i]!=signature_begin[i]) {
-			return 0;
-		}
+	if (memcmp(file_begin, signature_begin, 2)) {
+		return 0;
+	} else {
+		return 1;
 	}
-	return 1;
 }
 
 int isZip(int fd) {
@@ -74,22 +70,17 @@ int isZip(int fd) {
 	char signature_begin_3[4] = {80, 75, 7, 8};
 	/* There are 3 possibilities for the 4 first bytes of a file
 	 * (magic number)*/
-	int match_1=1, match_2=1, match_3=1;
 	lseek(fd, 0, SEEK_SET);
 	read(fd, file_begin, 4);
-	for(int i=0; i<4; i++) {
-		if (file_begin[i]!=signature_begin_1[i]) {
-			match_1=0;
-		}
-		if (file_begin[i]!=signature_begin_2[i]) {
-			match_2=0;
-		}
-		if (file_begin[i]!=signature_begin_3[i]) {
-			match_3=0;
-		}
-	}
-	if (match_1||match_2||match_3) {
+	
+	int match_1 = memcmp(file_begin, signature_begin_1, 4);
+	int match_2 = memcmp(file_begin, signature_begin_2, 4);
+	int match_3 = memcmp(file_begin, signature_begin_3, 4);
+	
+	if (match_1 && match_2 && match_3) {
+		return 0;
+	} else {
 		return 1;
-	} return 0;
+	}
 }
 

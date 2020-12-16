@@ -47,6 +47,12 @@ enum selectMode {
 	MODE_OWNER
 };
 
+enum threadStatus {
+	THREAD_NOT_EXISTS,
+	THREAD_PENDING_JOIN,
+	THREAD_IN_PROGRESS
+};
+
 typedef struct fileInfo {
 	char name[FILE_NAME_LEN];
 	char path[FILE_PATH_LEN];
@@ -68,8 +74,8 @@ typedef struct fileInfo_list {
 
 typedef struct threadData {
 	pthread_t tid;
-	int* inProgress;
-	pthread_mutex_t *mxInProgress;
+	enum threadStatus* status;
+	pthread_mutex_t *mxStatus;
 	fileInfo_list* index;
 	char* path_d;
 	char* path_f;
