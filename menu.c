@@ -42,7 +42,7 @@ void menuCount(fileInfo_list *index) {
 }
 
 int largerthanCondition(fileInfo_node *node, int x) {
-	return (node->fi.size > x);
+	return (node->fi.size > (off_t)x);
 }
 
 int namepartCondition(fileInfo_node *node, char *str) {
@@ -50,7 +50,7 @@ int namepartCondition(fileInfo_node *node, char *str) {
 }
 
 int ownerCondition(fileInfo_node *node, int uid) {
-	return (node->fi.uid == uid);
+	return (node->fi.uid == (uid_t)uid);
 }
 
 int modeCondition(fileInfo_node *node, int x, int uid, char *str, enum selectMode mode) {
@@ -89,6 +89,9 @@ void menuSelectRecord(fileInfo_list *index, int x, int uid, char *str, enum sele
 					printToStdin=1;
 				} else {
 					pager_in = popen(pager, "w");
+					if (pager_in == NULL) {
+						ERR("popen");
+					}
 					fprintf(pager_in, "%s", buf);
 					printToStdin=0;
 				}
@@ -107,7 +110,95 @@ void menuSelectRecord(fileInfo_list *index, int x, int uid, char *str, enum sele
 		printf("%s", buf);
 	}
 	if (!printToStdin) {
-		pclose(pager_in);
+		if (pclose(pager_in)==-1){
+			if (errno!=EPIPE) {
+				ERR("pclose");
+			}
+		}
 	}
 }
 
+void menuExit(threadData* thread_data) {
+	enum threadStatus status;
+	if (pthread_mutex_lock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_lock");
+	}
+	status = *(thread_data->status);
+	if (pthread_mutex_unlock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_unlock");
+	}
+	/* If status is THREAD_IN_PROGRESS, it will eventually turn to
+	 * THREAD_PENDING_JOIN.*/
+	if (status!=THREAD_NOT_EXISTS) {
+		if(pthread_join(thread_data->tid, NULL)) {
+			ERR("pthread_join");
+		}
+	}
+	if (pthread_mutex_lock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_lock");
+	}
+	*(thread_data->status) = THREAD_NOT_EXISTS;
+	if (pthread_mutex_unlock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_unlock");
+	}
+	freeList(thread_data->index);
+	
+}
+
+void menuForceExit(threadData* thread_data) {
+	enum threadStatus status;
+	if (pthread_mutex_lock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_lock");
+	}
+	status = *(thread_data->status);
+	if (pthread_mutex_unlock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_unlock");
+	}
+	/* If the thread does not exists, then exit immidiately.*/
+	if (status==THREAD_NOT_EXISTS) {
+		freeList(thread_data->index);
+		return;
+	} /* If the indexing is in action, then cancel the thread*/
+	else if (status==THREAD_IN_PROGRESS) {
+		if(pthread_cancel(thread_data->tid)) {
+			ERR("pthread_cancel");
+		}
+	}
+	/* Even if the thread was cancelled, we need to join.*/
+	if (pthread_join(thread_data->tid, NULL)) {
+		ERR("pthread_join");
+	}
+	if (pthread_mutex_lock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_lock");
+	}
+	*(thread_data->status) = THREAD_NOT_EXISTS;
+	if (pthread_mutex_unlock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_unlock");
+	}
+	freeList(thread_data->index);
+}
+
+void menuIndex(threadData* thread_data) {
+	enum threadStatus status;
+	if (pthread_mutex_lock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_lock");
+	}
+	status = *(thread_data->status);
+	if (pthread_mutex_unlock(thread_data->mxStatus)) {
+		ERR("pthread_mutex_unlock");
+	}
+	switch (status) {
+		case THREAD_IN_PROGRESS:
+			printf("Indexing in action.\n");
+			break;
+		case THREAD_PENDING_JOIN:
+			if(pthread_join(thread_data->tid, NULL)) {
+				ERR("pthread_join");
+			}
+			runThread(thread_data);
+			break;
+		case THREAD_NOT_EXISTS:
+			runThread(thread_data);
+			break;
+	}
+}

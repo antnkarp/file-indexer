@@ -15,6 +15,10 @@ void initList(fileInfo_list *list) {
 }
 fileInfo_node* newNode() {
 	 fileInfo_node* node = (fileInfo_node*) malloc(sizeof(fileInfo_node));
+	 if (node==NULL) {
+		 ERR("malloc");
+	 }
+	 memset(node,0, sizeof(fileInfo_node));
 	 node->next=NULL;
 	 return node;
 }
@@ -32,6 +36,7 @@ void pushList(fileInfo_list *list, fileInfo_node *node) {
 }
 int printNodeBuf(fileInfo_node *node, char *buf, int init_off) {
 	int sum_off=init_off;
+	/* Keep track of the total offset. */
 	sum_off+=snprintf(buf+sum_off, BUF_RECORD_SIZE, "name: %s\n", node->fi.name);
 	sum_off+=snprintf(buf+sum_off, BUF_RECORD_SIZE, "size: %ld\n", node->fi.size);
 	sum_off+=snprintf(buf+sum_off, BUF_RECORD_SIZE, "uid: %d\n", node->fi.uid);

@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
+#include <errno.h>
 
 #define ERR(source) (perror(source),\
 					fprintf(stderr,"%s:%d\n",__FILE__,__LINE__),\
@@ -31,6 +32,7 @@
 #define FILE_NAME_LEN 100
 #define FILE_PATH_LEN 200
 #define BUF_RECORD_SIZE 2000
+#define FILE_READ_CHUNK_SIZE 1000
 
 enum fileType {
 	TYPE_DIR,
@@ -92,10 +94,9 @@ void printList(fileInfo_list *list);
 void freeList(fileInfo_list *list);
 
 /*mole.c*/
-void readArguments(int argc, char **argv, char **path_d, char **path_f, int *t);
+void readArguments(int argc, char **argv, char *path_d, char *path_f, int *t);
 void getCommands(threadData *thread_data);
-void sethandler( void (*f)(int), int sigNo);
-void sig_handler(int sig);
+
 
 /*filetype.c*/
 enum fileType getFileType(int fd);
@@ -111,14 +112,23 @@ int namepartCondition(fileInfo_node *node, char *str);
 int ownerCondition(fileInfo_node *node, int uid);
 int modeCondition(fileInfo_node *node, int x, int uid, char *str, enum selectMode mode);
 void menuSelectRecord(fileInfo_list *index, int x, int uid, char *str, enum selectMode mode);
+void menuExit(threadData* thread_data);
+void menuForceExit(threadData* thread_data);
+void menuIndex(threadData* thread_data);
 
 /*index_thread.c*/
 void walk(char *dirToOpen, fileInfo_list *index);
 void runThread(threadData *thread_data);
+void clean(void* dir);
 
 /*file_io.c*/
 int loadFile(char *path_f, fileInfo_list *index);
 void saveFile(char *path_f, fileInfo_list *index);
 
+/*signal.c*/
+void sethandler( void (*f)(int), int sigNo);
+void sig_handler(int sig);
+sigset_t getAlarmMask();
+void handleSigalrm(threadData *thread_data);
 
 #endif
