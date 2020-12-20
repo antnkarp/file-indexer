@@ -1,4 +1,4 @@
-# mole
+# file-indexer
 This is a simple application that traverses directories and shows details on certain files.
 This procedure is referred to as indexing.
 
@@ -20,7 +20,7 @@ Following information is collected by the program:
 The data structure that contains all of the collected information is referred to as index.
 
 ## Build
-`make` command produces one executable: `mole`
+`make` command produces one executable: `file_indexer`
 
 ## Invocation
 The program has following command line arguments:
