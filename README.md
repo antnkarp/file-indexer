@@ -47,7 +47,7 @@ The program has following command line arguments:
    Calculates and displays the number of each file type present in the index.
    
 * `largerthan x`<br/>
-   Prints information in the index for files that have size larger than x (in bytes)/
+   Prints information in the index for files that have size larger than x (in bytes)
    
 * `namepart y`<br/>
    y is a part of a filename, it can contian spaces. Prints information about all files in the index for which y is a substring of the name.
