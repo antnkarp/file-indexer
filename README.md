@@ -1,6 +1,6 @@
 # file-indexer
-This is a simple application that traverses directories and shows details on certain files.
-This procedure is referred to as indexing.
+This is a simple application that traverses directories and shows details on certain files. It is designed for Linux operating systems.
+This procedure of gathering information is referred to as indexing.
 
 The program stores information about:
 * directories
