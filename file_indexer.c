@@ -1,12 +1,5 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 volatile sig_atomic_t last_signal = 0;
 
@@ -43,12 +36,12 @@ void readArguments(int argc, char **argv, char *path_d, char *path_f, int *t) {
 			char *home_str = getenv("HOME");
 			strcpy(relative_path_f, home_str);
 			char *suffix = "/.mole-index";
-			strcat(relative_path_f, suffix); 
+			strcat(relative_path_f, suffix);
 		} else {
 			strcpy(relative_path_f, mole_index_path);
 		}
 	}
-	/* Store aboslute paths in path_d, path_f. */ 
+	/* Store aboslute paths in path_d, path_f. */
 	if (realpath(relative_path_d, path_d) == NULL) {
 		ERR("realpath");
 	}
@@ -79,7 +72,7 @@ void getCommands(threadData* thread_data) {
 		if (last_signal == SIGALRM) {
 			handleSigalrm(thread_data);
 		}
-		if(FD_ISSET(0, &rfds)) {	
+		if(FD_ISSET(0, &rfds)) {
 			if(fgets(line,LINE_LEN,stdin) == NULL) {
 				if (ferror(stdin)) {
 					ERR("Input error (stdin)");
@@ -113,32 +106,32 @@ void getCommands(threadData* thread_data) {
 				printf("Not recognized command\n");
 			}
 		}
-	}		
+	}
 }
 
-					
+
 int main(int argc, char **argv) {
-	
+
 	char path_d[FILE_PATH_LEN], path_f[FILE_PATH_LEN];
 	int t=-1;
 	readArguments(argc, argv, path_d, path_f, &t);
 	sethandler(sig_handler,SIGALRM);
 	/* Ignore SIGPIPE to prevent termination after quitting $PAGER */
 	sethandler(SIG_IGN, SIGPIPE);
-	
+
 	threadData thread_data;
 	fileInfo_list index;
 	initList(&index);
 	enum threadStatus status = THREAD_NOT_EXISTS;
 	pthread_mutex_t mxStatus = PTHREAD_MUTEX_INITIALIZER;
-	
+
 	thread_data.status = &status;
 	thread_data.mxStatus = &mxStatus;
 	thread_data.index = &index;
 	thread_data.path_d = path_d;
 	thread_data.path_f = path_f;
 	thread_data.t = &t;
-	
+
 	if (!loadFile(path_f, &index)) {
 		runThread(&thread_data);
 	} else if (t != -1) {
@@ -157,7 +150,7 @@ int main(int argc, char **argv) {
 			ERR("stat");
 		}
 	}
-	
+
 	getCommands(&thread_data);
 	return EXIT_SUCCESS;
 }

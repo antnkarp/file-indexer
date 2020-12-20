@@ -1,12 +1,5 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 void saveFile(char *path_f, fileInfo_list *index) {
 	int fd;
@@ -53,7 +46,7 @@ int loadFile(char *path_f, fileInfo_list *index) {
 	if (read(fd, &size, sizeof(int)) == -1) {
 		ERR("read");
 	}
-	
+
 	fileInfo fi_arr[FILE_READ_CHUNK_SIZE];
 	memset(fi_arr, 0, FILE_READ_CHUNK_SIZE*sizeof(fileInfo));
 	initList(index);
@@ -74,7 +67,7 @@ int loadFile(char *path_f, fileInfo_list *index) {
 			node = newNode();
 			node->fi = fi_arr[i];
 			pushList(index, node);
-		}	
+		}
 	}
 	if (close(fd)) {
 		ERR("close");

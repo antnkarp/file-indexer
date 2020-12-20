@@ -1,12 +1,5 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 void initList(fileInfo_list *list) {
 	list->head=NULL;
@@ -68,7 +61,7 @@ void printNode(fileInfo_node *node, FILE* fp) {
 	fprintf(fp, "name: %s\n", node->fi.name);
 	fprintf(fp, "size: %ld\n", node->fi.size);
 	fprintf(fp, "uid: %d\n", node->fi.uid);
-	
+
 	switch(node->fi.type) {
 		case TYPE_DIR:
 			fprintf(fp, "type: Directory\n");
@@ -111,4 +104,4 @@ void printList(fileInfo_list *list) {
 		printNode(tmp, stdin);
 		tmp = tmp->next;
 	}
-} 
+}

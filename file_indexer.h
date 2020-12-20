@@ -1,15 +1,6 @@
 
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
-
-
-#ifndef MOLE_H
-#define MOLE_H
+#ifndef FILE_INDEXER_H
+#define FILE_INDEXER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,7 +84,7 @@ int printNodeBuf(fileInfo_node *node, char *buf, int init_off);
 void printList(fileInfo_list *list);
 void freeList(fileInfo_list *list);
 
-/*mole.c*/
+/*file-indexer.c*/
 void readArguments(int argc, char **argv, char *path_d, char *path_f, int *t);
 void getCommands(threadData *thread_data);
 

@@ -1,12 +1,5 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 enum fileType getFileType(int fd) {
 	enum fileType type;
@@ -18,7 +11,7 @@ enum fileType getFileType(int fd) {
 		type=TYPE_GZIP;
 	} else if (isZip(fd)) {
 		type=TYPE_ZIP;
-	} else {	
+	} else {
 		type=TYPE_OTHER;
 	}
 	return type;
@@ -95,11 +88,10 @@ int isZip(int fd) {
 	int match_1 = memcmp(file_begin, signature_begin_1, 4);
 	int match_2 = memcmp(file_begin, signature_begin_2, 4);
 	int match_3 = memcmp(file_begin, signature_begin_3, 4);
-	
+
 	if (match_1 && match_2 && match_3) {
 		return 0;
 	} else {
 		return 1;
 	}
 }
-

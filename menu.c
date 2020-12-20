@@ -1,12 +1,5 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 void menuCount(fileInfo_list *index) {
 	int n_dir=0, n_jpeg=0, n_png=0, n_gzip=0, n_zip=0;
@@ -38,7 +31,7 @@ void menuCount(fileInfo_list *index) {
 	printf("Number of PNG files: %d\n", n_png);
 	printf("Number of GZIP files: %d\n", n_gzip);
 	printf("Number of ZIP files: %d\n", n_zip);
-	
+
 }
 
 int largerthanCondition(fileInfo_node *node, int x) {
@@ -142,7 +135,7 @@ void menuExit(threadData* thread_data) {
 		ERR("pthread_mutex_unlock");
 	}
 	freeList(thread_data->index);
-	
+
 }
 
 void menuForceExit(threadData* thread_data) {

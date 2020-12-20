@@ -1,51 +1,44 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 void *thread_work(void *voidPtr) {
 	if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL)) {
 		ERR("pthread_setcanceltype");
 	}
 	threadData *args = (threadData*) voidPtr;
-	
+
 	/* Free the list to avoid memory leaks. */
 	freeList(args->index);
 	initList(args->index);
-	
+
 	walk(args->path_d, args->index);
-	
+
 	/* Disable cancellation, so that there are no unfinished writes. */
 	if (pthread_setcanceltype(PTHREAD_CANCEL_DISABLE, NULL)) {
 		ERR("pthread_setcanceltype");
 	}
-	
+
 	saveFile(args->path_f, args->index);
-	
+
 	/* Periodically reindex every t seconds. */
 	if(*(args->t) != -1) {
 		alarm(0);
 		alarm(*(args->t));
 	}
 	fprintf(stderr, "\nFinished indexing\n");
-	
+
 	if (pthread_mutex_lock(args->mxStatus)) {
 		ERR("pthread_mutex_lock");
 	}
 	/* The operation has been completed. The thread is awaiting join. */
 	*(args->status)=THREAD_PENDING_JOIN;
-	
+
 	if (pthread_mutex_unlock(args->mxStatus)) {
 		ERR("pthread_mutex_unlock");
 	}
 	return NULL;
 }
-	 
+
 
 void walk(char *dirToOpen, fileInfo_list *index) {
 	/* Recursively check every subdirectory and file. */
@@ -62,7 +55,7 @@ void walk(char *dirToOpen, fileInfo_list *index) {
 		ERR("readdir");
 	}
 	/* opendir() uses malloc for its return pointer. Invoke closedir()
-	 * onm cleanup.*/ 
+	 * onm cleanup.*/
 	pthread_cleanup_push(clean, dir);
 	/* Iterate over all entries in the directory. */
 	do {
@@ -79,8 +72,8 @@ void walk(char *dirToOpen, fileInfo_list *index) {
 		}
 		int lstat_failed = lstat(path, &s);
 		if(!lstat_failed && S_ISDIR(s.st_mode)) {
-			/* Case 1: Directory */	
-			
+			/* Case 1: Directory */
+
 			/* Skip "." and ".." directories. */
 			if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
 				continue;
@@ -116,11 +109,11 @@ void walk(char *dirToOpen, fileInfo_list *index) {
 		new_node->fi = fi;
 		pushList(index, new_node);
 	} while ((entry = readdir(dir))!=NULL);
-	
+
 	if (closedir(dir) == -1) {
 		ERR("closedir");
 	}
-	pthread_cleanup_pop(0); 	
+	pthread_cleanup_pop(0);
 }
 
 void clean(void *dir) {

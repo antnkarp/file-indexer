@@ -1,15 +1,8 @@
-/*
-------------------------------------------------------------------------
-  I declare that this piece of work which is the basis for recognition of
-  achieving learning outcomes in the OPS2 course was completed on my own.
-  Antoni Karpinski 249372
-------------------------------------------------------------------------
-*/
 
-#include "mole.h"
+#include "file_indexer.h"
 
 extern volatile sig_atomic_t last_signal;
-		 
+
 void sethandler( void (*f)(int), int sigNo) {
 	struct sigaction act;
 	memset(&act, 0, sizeof(struct sigaction));
